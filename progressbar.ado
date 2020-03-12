@@ -82,211 +82,233 @@ syntax , [init] [start(string)] [end(string)] [step(string)] [type(string)] [lis
 
 // When the command is initiated, claculate the total length of the loops
 
-	if "`init'"=="init" {
-
-		// Set up defaults of options are omitted
-
-		if "`type'"=="" {
-			local type = "v"
-		}
+if "`init'"=="init" {
+	
+	// Set up defaults of options are omitted
+	
+	if "`type'"=="" {
+		local type = "v"
+	}
+	
+	if "`start'"=="" {
+		local start = "1"
+	}
+	
+	local nestnum = wordcount("`type'",1)
+	
+	local l = 0
+	
+	forvalues ii = 1(1)`nestnum' {
 		
-		if "`start'"=="" {
-			local start = "1"
-		}
-	
-		local nestnum = wordcount("`type'",1)
-
-		local l = 0
-	
-		forvalues ii = 1(1)`nestnum' {
-		
-			if word("`type'",`ii') == "v" {
-	
-				local nv =`nv' + 1
-				if "`step'"=="" {
-					local step`nv'=1
-				}
-				else {
-					local step`nv' = real((word("`step'",`nv')))
-				}
-
-				local length`ii' = round( (real(word("`end'",`nv')) - real(word("`start'",`nv'))) / `step`nv'' ,1) + 1
-				// di "length`ii' is `length`ii''"
-			}
-		
-
-	
-			if word("`type'",`ii') == "e" {
-		
-				local ne =`ne' + 1
-	
-				local length`ii' = wordcount("`list`ne''",1)
-				// di "length`ii' is `length`ii''"
-			}
+		if word("`type'",`ii') == "v" {
 			
-			
-		}
-		
-		* Error checking on list types
-		
-		//if word("`type'",`ii') != ("e" | "v") {
-			//di "Invalid loop type - must be e or v"
-			//exit
-		// }
-		
-	
-		forvalues ii = 1(1)`nestnum' {		
-			
-			if `ii'==1 {			
-				local multiply = `length1'
+			local nv =`nv' + 1
+			if "`step'"=="" {
+				local step`nv'=1
 			}
 			else {
-				local multiply = `multiply' * `length`ii'' 	
-			}	
-		}	
-		
-		
-		
-		
+				local step`nv' = real((word("`step'",`nv')))
+			}
 			
-		global progressbarlength = `multiply'
-		global progressbarposition = 0
-
-		if "`time'"=="time" {
-			global progressbarstarttime = clock("$S_TIME", "hms")
-			global progressbarstartdate = date("$S_DATE", "DMY")
+			local length`ii' = round( (real(word("`end'",`nv')) - real(word("`start'",`nv'))) / `step`nv'' ,1) + 1
+			// di "length`ii' is `length`ii''"
 		}
 		
-		if "`debug'"=="debug" {
-			di $progressbarlength
+		
+		
+		if word("`type'",`ii') == "e" {
+			
+			local ne =`ne' + 1
+			
+			local length`ii' = wordcount("`list`ne''",1)
+			// di "length`ii' is `length`ii''"
 		}
 		
 		
 	}
-
-	else {
 	
-// When the command is called in a loop, display the progress bar comparing
-// distance travelled to the length
-
+	* Error checking on list types
 	
-		if $progressbarposition < $progressbarlength {
-
-			if "`display'"!="display" {
-				// di "`display'"
-				global progressbarposition = $progressbarposition + 1
-			}
-
-			local barwidth = `width' - 6
+	//if word("`type'",`ii') != ("e" | "v") {
+	//di "Invalid loop type - must be e or v"
+	//exit
+	// }
+	
+	
+	forvalues ii = 1(1)`nestnum' {		
 		
-			local percent = $progressbarposition / $progressbarlength
-			local print = round(`percent' * `barwidth',1)
-			
-			if "`debug'"=="debug" {
-				di "Progress bar width is `barwidth'"
-				di "Printing `print'"
-			}
-	
-	
-
-			
-			if ("`loud'"!="loud") {	
-				set more off	
-				cls
-			}
-		
-	
-			local printbar = "|"
-	
-			quietly forvalues ii = 1(1)`print' {	
-				local printbar = "`printbar'" + "="		
-			}
-
-			if `print'<`barwidth' {
-				local emptyprint = `print'+1
-				quietly forvalues ii = `emptyprint'(1)`barwidth' {	
-					local emptybar = "`emptybar'" + "."		
-				}
-			}
-			
-			if ("`loud'"!="loud") {	
-				cls
-			}
-	
-			local printpercent = round(`percent'*100,1)
-
-			if `printpercent'>=10 {
-				local space = "~"
-			}
-			if `printpercent'>=100 {
-				local space=""
-			}
-
-			if `printpercent'<10 {
-				local space = "~~"
-			}
-	
-			* Display the completed progress bar
-			di "`printbar'" "`emptybar'" "|" "`space'" "`printpercent'" "%"
-
-			
-				// global progressbarnowtime = clock("$S_TIME", "hms")
-			if "`time'"=="time" {
-				local elapsedtime = ((date("$S_DATE", "DMY") - $progressbarstartdate )*1440) +  (clock("$S_TIME", "hms") - $progressbarstarttime )/60000
-				local remainingtime = (`elapsedtime'/`percent') - `elapsedtime'
-	
-
-				if `elapsedtime'>1 & `elapsedtime'<=60 {
-					local elapsedtime = round(`elapsedtime',0.1)
-					local units1 = "mins"
-				}
-				
-				if `elapsedtime'>60 & `elapsedtime'<=1440 {
-					local elapsedtime = round(`elapsedtime'/60,0.1)
-					local units1 = "hours"
-				}
-				
-				if `elapsedtime'>1440 {
-					local elapsedtime = round(`elapsedtime'/1440,0.1)
-					local units1 = "days"
-				}
-				
-				if `elapsedtime'<=1 {
-					local elapsedtime = round(`elapsedtime'*60,1)
-					local units1 = " secs"
-				}		
-				
-				if `remainingtime'>1 & `remainingtime'<=60 {
-					local remainingtime = round(`remainingtime',0.1)
-					local units2 = "mins."
-				}
-				
-				if `remainingtime'>60 & `remainingtime'<=1440 {
-					local remainingtime = round(`remainingtime'/60,0.1)
-					local units2 = "hours."
-				}
-				
-				if `remainingtime'>1440 {
-					local remainingtime = round(`remainingtime'/1440,0.1)
-					local units2 = "days."
-				}	
-				
-				if `remainingtime'<=1 {
-					local remainingtime = round(`remainingtime'*60,1)
-					local units2 = "secs."
-				}
-							
-				
-				di "Time elapsed " %8.1fc `elapsedtime' " `units1'" ", estimated time remaining " %8.1fc `remainingtime' " `units2'"
-			}
-
-
+		if `ii'==1 {			
+			local multiply = `length1'
 		}
 		else {
-			di "Your progress has exceeded 100% - perhaps you need to initialise a new progressbar?"
-		}
-					
-}
+			local multiply = `multiply' * `length`ii'' 	
+		}	
+	}	
 	
+	
+	
+	
+	
+	global progressbarlength = `multiply'
+	global progressbarposition = 0
+	
+	if "`time'"=="time" {
+		global progressbarstarttime = clock("$S_TIME", "hms")
+		global progressbarstartdate = date("$S_DATE", "DMY")
+	}
+	
+	if "`debug'"=="debug" {
+		di $progressbarlength
+	}
+	
+	local nl: word count `c(alpha)'
+	local c = 5   // length of code
+ 	
+	foreach x of numlist 1/`c' {
+		local p = runiformint(1,`nl')
+		local l : word `p' of `c(alpha)'
+		local ls = "`ls'`l'"
+	}
+	global pb_lc  = "`ls'" // letter code
+	cap erase _prbar_${pb_lc}.txt
+	translate @Results _prbar_${pb_lc}.txt
+	
+}
+
+else {
+	
+	
+	
+	// When the command is called in a loop, display the progress bar comparing
+	// distance travelled to the length
+	
+	
+	if $progressbarposition < $progressbarlength {
+		
+		if "`display'"!="display" {
+			// di "`display'"
+			global progressbarposition = $progressbarposition + 1
+		}
+		
+		local barwidth = `width' - 6
+		
+		local percent = $progressbarposition / $progressbarlength
+		local print = round(`percent' * `barwidth',1)
+		
+		if "`debug'"=="debug" {
+			di "Progress bar width is `barwidth'"
+			di "Printing `print'"
+		}
+		
+		
+		
+		
+		if ("`loud'"!="loud") {	
+			set more off	
+			cls
+		}
+		
+		
+		local printbar = "|"
+		
+		quietly forvalues ii = 1(1)`print' {	
+			local printbar = "`printbar'" + "="		
+		}
+		
+		if `print'<`barwidth' {
+			local emptyprint = `print'+1
+			quietly forvalues ii = `emptyprint'(1)`barwidth' {	
+				local emptybar = "`emptybar'" + "."		
+			}
+		}
+		
+		if ("`loud'"!="loud") {	
+			cls
+		}
+		
+		local printpercent = round(`percent'*100,1)
+		
+		if `printpercent'>=10 {
+			local space = "~"
+		}
+		if `printpercent'>=100 {
+			local space=""
+		}
+		
+		if `printpercent'<10 {
+			local space = "~~"
+		}
+		
+		* Display the completed progress bar
+		if ("`printpercent'" == "100") {
+			noi type _prbar_${pb_lc}.txt
+			disp _n 
+			cap erase _prbar_${pb_lc}.txt
+		}
+		di "`printbar'" "`emptybar'" "|" "`space'" "`printpercent'" "%"
+		
+		
+		// global progressbarnowtime = clock("$S_TIME", "hms")
+		if "`time'"=="time" {
+			local elapsedtime = ((date("$S_DATE", "DMY") - $progressbarstartdate )*1440) +  (clock("$S_TIME", "hms") - $progressbarstarttime )/60000
+			local remainingtime = (`elapsedtime'/`percent') - `elapsedtime'
+			
+			
+			if `elapsedtime'>1 & `elapsedtime'<=60 {
+				local elapsedtime = round(`elapsedtime',0.1)
+				local units1 = "mins"
+			}
+			
+			if `elapsedtime'>60 & `elapsedtime'<=1440 {
+				local elapsedtime = round(`elapsedtime'/60,0.1)
+				local units1 = "hours"
+			}
+			
+			if `elapsedtime'>1440 {
+				local elapsedtime = round(`elapsedtime'/1440,0.1)
+				local units1 = "days"
+			}
+			
+			if `elapsedtime'<=1 {
+				local elapsedtime = round(`elapsedtime'*60,1)
+				local units1 = " secs"
+			}		
+			
+			if `remainingtime'>1 & `remainingtime'<=60 {
+				local remainingtime = round(`remainingtime',0.1)
+				local units2 = "mins."
+			}
+			
+			if `remainingtime'>60 & `remainingtime'<=1440 {
+				local remainingtime = round(`remainingtime'/60,0.1)
+				local units2 = "hours."
+			}
+			
+			if `remainingtime'>1440 {
+				local remainingtime = round(`remainingtime'/1440,0.1)
+				local units2 = "days."
+			}	
+			
+			if `remainingtime'<=1 {
+				local remainingtime = round(`remainingtime'*60,1)
+				local units2 = "secs."
+			}
+			
+			
+			di "Time elapsed " %8.1fc `elapsedtime' " `units1'" ", estimated time remaining " %8.1fc `remainingtime' " `units2'"
+			
+			if ("`printpercent'" == "100") {
+				exit
+			}
+		}
+		
+		
+	}
+	else {
+		di "Your progress has exceeded 100% - perhaps you need to initialise a new progressbar?"
+	}
+	
+}
+
 end
 
